@@ -17,7 +17,18 @@
  * GNU General Public License for more details.
  *
  */
-
+// from dts
+//	gpio_keypad{
+//		compatible = "amlogic, gpio_keypad";
+//		status = "okay";
+//		scan_period = <20>;
+//		key_num = <1>;
+//		key_name = "power";
+//		key_code = <116>;
+//		key_pin = <&gpio_ao  GPIOAO_2  GPIO_ACTIVE_HIGH>;  /*"GPIOAO_2";*/
+//		irq_keyup = <6>;
+//		irq_keydown = <7>;
+//	};
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/interrupt.h>
@@ -241,7 +252,7 @@ static int gpio_key_probe(struct platform_device *pdev)
 
 	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
 	if (!pdata) {
-		dev_err(&pdev->dev ,  "platform data is required!\n");
+		dev_err(&pdev->dev ,  "faild to alloc mem for platform data!\n");
 		state = -EINVAL;
 		goto get_key_node_fail;
 	}
@@ -310,27 +321,27 @@ static int gpio_key_probe(struct platform_device *pdev)
 				 "gpio_key: find key_name=%d finished\n", i);
 			break;
 		}
-		ret = amlogic_gpio_name_map_num(pdev , str);
-		dev_info(&pdev->dev, "amlogic_gpio_name_map_num pin %d!%s::\n",
-			 ret , str);
-		if (ret < 0) {
-			dev_info(&pdev->dev, "gpio_key bad pin !\n");
-			goto get_key_param_failed;
-		}
+//		ret = amlogic_gpio_name_map_num(pdev , str);
+//		dev_info(&pdev->dev, "amlogic_gpio_name_map_num pin %d!%s::\n",
+//			 ret , str);
+//		if (ret < 0) {
+//			dev_info(&pdev->dev, "gpio_key bad pin !\n");
+//			goto get_key_param_failed;
+//		}
 //		desc = of_get_named_gpiod_flags(pdev->dev.of_node ,
 //			"key_pin" ,  0 ,  NULL);
 //		pdata->key[i].pin = desc_to_gpio(desc);
 		pdata->key[i].pin = of_get_named_gpio_flags(pdev->dev.of_node ,
-			"key_pin" ,  0 ,  NULL);
-		dev_info(&pdev->dev, "gpio_key: %d %s(%d)\n", i,
-			 (pdata->key[i].name) ,  pdata->key[i].pin);
+			"key_pin" ,  i ,  NULL);
+		dev_info(&pdev->dev, "gpio_key: %d name:%s pin:%d keycode:%d\n", i,
+			 (pdata->key[i].name) ,  pdata->key[i].pin,pdata->key[i].code);
 		/*pdata->key[i].pin = ret;*/
 		gpio_request(pdata->key[i].pin ,  MOD_NAME);
 		if (!gpio_highz) {
 			gpio_direction_input(pdata->key[i].pin);
 			//gpio_set_pullup(pdata->key[i].pin , 1);
 			//gpio_set_pullup(pdata->key[i].pin , 1);
-			gpiod_set_pull(gpio_to_desc(pdata->key[i].pin),1);
+			gpiod_set_pull(gpio_to_desc(pdata->key[i].pin),GPIOD_PULL_UP);
 
 		}
 #ifdef USE_IRQ
@@ -417,11 +428,11 @@ static int gpio_key_probe(struct platform_device *pdev)
 	return 0;
 
 get_key_param_failed:
-kfree(key_param);
+	kfree(key_param);
 get_param_mem_fail:
-kfree(pdata->key);
+	kfree(pdata->key);
 get_key_mem_fail:
-kfree(pdata);
+	kfree(pdata);
 get_key_node_fail:
 	return state;
 }
