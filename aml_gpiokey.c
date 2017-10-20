@@ -17,18 +17,22 @@
  * GNU General Public License for more details.
  *
  */
-// from dts
-//	gpio_keypad{
-//		compatible = "amlogic, gpio_keypad";
-//		status = "okay";
-//		scan_period = <20>;
-//		key_num = <1>;
-//		key_name = "power";
-//		key_code = <116>;
-//		key_pin = <&gpio_ao  GPIOAO_2  GPIO_ACTIVE_HIGH>;  /*"GPIOAO_2";*/
-//		irq_keyup = <6>;
-//		irq_keydown = <7>;
-//	};
+/* from dts
+	gpio_keypad{
+		compatible = "amlogic, gpio_keypad";
+		status = "okay";
+		scan_period = <20>;
+		key_num = <4>;
+		key_name =  "power", "vol-", "vol+", "mute";
+		key_code = <116 114 115 113>;
+		key_pin = <&gpio_ao  GPIOAO_5  GPIO_ACTIVE_HIGH>,
+				<&gpio_ao  GPIOAO_3  GPIO_ACTIVE_HIGH>,
+				<&gpio_ao  GPIOAO_8  GPIO_ACTIVE_HIGH>,
+				<&gpio_ao  GPIOAO_6  GPIO_ACTIVE_HIGH>;
+		irq_keyup = <6>;
+		irq_keydown = <7>;
+	};
+*/
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/interrupt.h>
@@ -239,7 +243,7 @@ static int gpio_key_probe(struct platform_device *pdev)
 	int gpio_highz = 0;
 
 	if (!pdev->dev.of_node) {
-		dev_info(&pdev->dev, "gpio_key: pdev->dev.of_node == NULL!\n");
+		dev_warn(&pdev->dev, "gpio_key: pdev->dev.of_node == NULL!\n");
 		state = -EINVAL;
 		goto get_key_node_fail;
 	}
@@ -274,8 +278,8 @@ static int gpio_key_probe(struct platform_device *pdev)
 		ret = of_property_read_string_index(pdev->dev.of_node ,
 			 "key_name", i, &(pdata->key[i].name));
 		if (ret < 0) {
-			dev_info(&pdev->dev,
-				 "gpio_key: find key_name=%d finished\n", i);
+			dev_warn(&pdev->dev,
+				 "gpio_key: find key_name finished. find %d key_name\n", i+1);
 			break;
 		}
 	}
@@ -314,29 +318,18 @@ static int gpio_key_probe(struct platform_device *pdev)
 	for (i = 0; i < key_size; i++) {
 		ret = of_property_read_string_index(pdev->dev.of_node ,
 			"key_pin" , i , &str);
-		dev_info(&pdev->dev, "gpio_key: %d name(%s) pin(%s)\n",
-			 i, (pdata->key[i].name), str);
 		if (ret < 0) {
-			dev_info(&pdev->dev,
-				 "gpio_key: find key_name=%d finished\n", i);
+			dev_warn(&pdev->dev,
+				 "gpio_key: find pin finished,find pin number:%d\n", i+1);
 			break;
 		}
-//		ret = amlogic_gpio_name_map_num(pdev , str);
-//		dev_info(&pdev->dev, "amlogic_gpio_name_map_num pin %d!%s::\n",
-//			 ret , str);
-//		if (ret < 0) {
-//			dev_info(&pdev->dev, "gpio_key bad pin !\n");
-//			goto get_key_param_failed;
-//		}
-//		desc = of_get_named_gpiod_flags(pdev->dev.of_node ,
-//			"key_pin" ,  0 ,  NULL);
-//		pdata->key[i].pin = desc_to_gpio(desc);
 		pdata->key[i].pin = of_get_named_gpio_flags(pdev->dev.of_node ,
 			"key_pin" ,  i ,  NULL);
 		dev_info(&pdev->dev, "gpio_key: %d name:%s pin:%d keycode:%d\n", i,
 			 (pdata->key[i].name) ,  pdata->key[i].pin,pdata->key[i].code);
 		/*pdata->key[i].pin = ret;*/
 		gpio_request(pdata->key[i].pin ,  MOD_NAME);
+		//todo:return fail
 		if (!gpio_highz) {
 			gpio_direction_input(pdata->key[i].pin);
 			//gpio_set_pullup(pdata->key[i].pin , 1);
