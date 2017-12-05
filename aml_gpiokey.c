@@ -165,7 +165,17 @@ void clr_pwr_key(void)
 {
 	/*aml_set_reg32_mask(P_AO_IRQ_STAT_CLR , 1<<8);*/
 }
+/*
+static irqreturn_t kp_isr_1(int irq ,  void *data)
+{
+	//struct kp *kp_data = (struct kp *)data;
+	printk("kp_isr_1  %d\n",irq);
 
+//	if (!deep_suspend_flag)
+//		clr_pwr_key();
+	return IRQ_HANDLED;
+}
+*/
 
 #ifdef USE_IRQ
 
@@ -330,6 +340,17 @@ static int gpio_key_probe(struct platform_device *pdev)
 		/*pdata->key[i].pin = ret;*/
 		gpio_request(pdata->key[i].pin ,  MOD_NAME);
 		//todo:return fail
+
+/*TESET  func  reqest_irq()
+		ret = gpio_to_irq(pdata->key[i].pin);
+		if(ret > 0 ){
+			dev_info(&pdev->dev, "gpio_key: irqnum:%d \n", ret);
+			if (request_irq(ret, kp_isr_1, IRQF_TRIGGER_FALLING ,
+			 "irq_key" ,  gp_kp)) 
+				dev_info(&pdev->dev,  "Failed to request gpio key up irq.\n");
+		}else
+			dev_info(&pdev->dev, "gpio_key: gpio_to_irq fail \n");
+*/
 		if (!gpio_highz) {
 			gpio_direction_input(pdata->key[i].pin);
 			//gpio_set_pullup(pdata->key[i].pin , 1);
