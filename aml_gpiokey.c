@@ -216,7 +216,7 @@ static const struct file_operations keypad_fops = {
 	.open       = gpio_key_config_open,
 	.release    = gpio_key_config_release,
 };
-
+/*
 static int register_keypad_dev(struct kp  *kp)
 {
 	int ret = 0;
@@ -233,7 +233,7 @@ static int register_keypad_dev(struct kp  *kp)
 		MKDEV(kp->config_major , 0), NULL , kp->config_name);
 	return ret;
 }
-
+*/
 static int gpio_key_probe(struct platform_device *pdev)
 {
 	const char *str;
@@ -437,7 +437,7 @@ static int gpio_key_probe(struct platform_device *pdev)
 	}
 /*set_pwr_key();*/
 	dev_info(&pdev->dev, "gpio keypad register input device completed.\n");
-	register_keypad_dev(gp_kp);
+	//register_keypad_dev(gp_kp);
 	kfree(key_param);
 	return 0;
 
@@ -455,10 +455,11 @@ static int gpio_key_remove(struct platform_device *pdev)
 {
 	struct gpio_platform_data *pdata = platform_get_drvdata(pdev);
 	struct kp *kp = gp_kp;
-
+    int i;
 	input_unregister_device(kp->input);
 	input_free_device(kp->input);
-	unregister_chrdev(kp->config_major ,  kp->config_name);
+	del_timer(&kp->timer);
+	//unregister_chrdev(kp->config_major ,  kp->config_name);
 	if (kp->config_class) {
 		if (kp->config_dev)
 			device_destroy(kp->config_class ,
@@ -467,6 +468,9 @@ static int gpio_key_remove(struct platform_device *pdev)
 	}
 	kfree(kp);
 #ifdef CONFIG_OF
+	for(i=0;i<pdata->key_num;i++){
+		gpio_free(pdata->key[i].pin);
+	}
 	kfree(pdata->key);
 	kfree(pdata);
 #endif
